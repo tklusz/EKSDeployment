@@ -19,7 +19,7 @@ resource "aws_subnet" "private_subnet" {
   availability_zone = element(var.private_subnet_azs, count.index)
 
   tags = {
-     Name = "${var.name}-private"
+     Name = "${var.name}-private-${count.index}"
   }
 }
 
@@ -28,6 +28,10 @@ resource "aws_eip" "nat_gateway_eip"{
   count = length(var.private_subnet_cidrs)
 
   vpc = "true"
+
+  tags = {
+    Name = "${var.name}-nat-gateway-eip-${count.index}"
+  }
 }
 
 # Creating NAT gateways for private subnets.
@@ -53,7 +57,7 @@ resource "aws_route_table" "private_route_table"{
   }
 
   tags = {
-    Name = "${var.name}-private-route-table"
+    Name = "${var.name}-private-route-table-${count.index}"
   }
 }
 
@@ -77,13 +81,17 @@ resource "aws_subnet" "public_subnet" {
   availability_zone = element(var.public_subnet_azs, count.index)
 
   tags = {
-     Name = "${var.name}-public"
+     Name = "${var.name}-public-${count.index}"
   }
 }
 
 # Internet gateway used for public subnet routing to internet.
 resource "aws_internet_gateway" "internet_gateway" {
   vpc_id = aws_vpc.vpc.id
+
+  tags = {
+    Name = "${var.name}-internet-gateway"
+  }
 }
 
 # Route table for public subnets.

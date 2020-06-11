@@ -1,5 +1,5 @@
 # Creates VPC resources.
-module "vpc" {
+module "eks_vpc" {
   source = "./modules/vpc"
 
   name = "eks"
