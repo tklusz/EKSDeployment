@@ -1,7 +1,7 @@
 # Security Groups for the cluster and nodes.
 # AWS best practices are listed here - https://docs.aws.amazon.com/eks/latest/userguide/sec-group-reqs.html
 
-# Creating the security_group_rules outside of the SG to avoid cyclic dependencies.
+# Cluster security group + rules.
 resource "aws_security_group" "cluster" {
   name        = "${var.name}-cluster-security-group"
   description = "Cluster-level security group."
@@ -12,7 +12,6 @@ resource "aws_security_group" "cluster" {
   }
 }
 
-# This rule would lead to the cyclic dependency.
 resource "aws_security_group_rule" "cluster_worker_ingress" {
   type = "ingress"
 
@@ -24,7 +23,6 @@ resource "aws_security_group_rule" "cluster_worker_ingress" {
 
   security_group_id        = aws_security_group.cluster.id
   source_security_group_id = aws_security_group.worker.id
-
 }
 
 resource "aws_security_group_rule" "cluser_user_ingress" {
@@ -51,40 +49,61 @@ resource "aws_security_group_rule" "cluser_egress" {
   security_group_id = aws_security_group.cluster.id
 }
 
-# Leaving this SG as-is, only one needs to change to break the cycle.
+resource "aws_security_group_rule" "cluser_ingress_self" {
+  type = "ingress"
+
+  from_port   = "0"
+  to_port     = "0"
+  protocol    = "-1"
+
+  security_group_id = aws_security_group.cluster.id
+  source_security_group_id = aws_security_group.cluster.id
+}
+
+# Worker security group + rules.
 resource "aws_security_group" "worker" {
   name        = "${var.name}-worker-security-group"
   description = "Worker-level security group."
   vpc_id      = var.vpc_id
 
-  ingress {
-    description = "Allows inter-node communication."
-
-    from_port   = "0"
-    to_port     = "0"
-    protocol    = "-1"
-
-    self = true
-  }
-
-  ingress {
-    description = "Allows worker ingress from the cluster."
-
-    from_port   = "0"
-    to_port     = "0"
-    protocol    = "-1"
-
-    security_groups = [aws_security_group.cluster.id]
-  }
-
-  egress {
-    from_port   = "0"
-    to_port     = "0"
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags = {
     "Name" = "${var.name}-worker-security-group"
   }
+}
+
+resource "aws_security_group_rule" "worker_to_worker_ingress" {
+  type = "ingress"
+
+  description = "Allows inter-node communication."
+
+  from_port   = "0"
+  to_port     = "0"
+  protocol    = "-1"
+
+  source_security_group_id = aws_security_group.worker.id
+  security_group_id = aws_security_group.worker.id
+}
+
+resource "aws_security_group_rule" "woker_cluster_ingress" {
+  type = "ingress"
+
+  description = "Allows worker ingress from the cluster."
+
+  from_port   = "0"
+  to_port     = "0"
+  protocol    = "-1"
+
+  source_security_group_id = aws_security_group.cluster.id
+  security_group_id = aws_security_group.worker.id
+}
+
+resource "aws_security_group_rule" "worker_egress" {
+  type = "egress"
+
+  from_port   = "0"
+  to_port     = "0"
+  protocol    = "-1"
+  cidr_blocks = ["0.0.0.0/0"]
+
+  security_group_id = aws_security_group.worker.id
 }

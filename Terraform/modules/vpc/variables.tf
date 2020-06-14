@@ -2,6 +2,7 @@
 variable "vpc_cidr_block" {}
 variable "instance_tenancy" {}
 variable "name" {}
+variable "eks_cluster_name" {}
 
 # For subnets.
 variable "private_subnet_cidrs" {

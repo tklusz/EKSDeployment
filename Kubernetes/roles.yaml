@@ -1,0 +1,49 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: namespace-1-role
+  namespace: user-1
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: namespace-2-role
+  namespace: user-2
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: user-1-binding
+  namespace: user-1
+roleRef:
+  kind: Role
+  name: namespace-1-role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: User
+  name: user-1
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: user-2-binding
+  namespace: user-2
+roleRef:
+  kind: Role
+  name: namespace-2-role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: User
+  name: user-2
+  apiGroup: rbac.authorization.k8s.io
