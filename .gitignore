@@ -1,2 +1,5 @@
 terraform.tfstate*
 .terraform
+Terraform/aws-auth.yaml
+Terraform/cluster_autoscaler.yaml
+Terraform/external_dns.yaml

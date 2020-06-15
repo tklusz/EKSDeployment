@@ -19,39 +19,40 @@ resource "aws_iam_user" "user-2" {
   force_destroy = true
 }
 
-# Adding adminstrator permissions for EKS admin.
+# Adding administrator permissions for EKS admin.
 resource "aws_iam_group" "administrator_group" {
-  name = "${var.name}-administrator-group"
+  name = "${var.name_prefix}-administrator-group"
 }
 
 resource "aws_iam_group_policy_attachment" "admin_group_policy_attachment" {
   group      = aws_iam_group.administrator_group.name
-  # This is a built-in policy for Adminstrator access.
+  # This is a built-in policy for administrator access.
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
 resource "aws_iam_user_group_membership" "administrator_group_membership" {
-  user = aws_iam_user.cluster_admin.name
+  user   = aws_iam_user.cluster_admin.name
   groups = [aws_iam_group.administrator_group.name]
 }
 
-
 # Adding baseline policies for the other users.
+resource "aws_iam_group" "user_group" {
+  name = "${var.name_prefix}-user-group"
+}
+
+# This uses a template file and renders the values based on the vars block.
 data "template_file" "user_policy_template" {
   template = file("${path.module}/templates/user_policy.tpl")
+
   vars = {
     cluster_arn = var.cluster_arn,
   }
 }
 
-resource "aws_iam_group" "user_group" {
-  name = "${var.name}-user-group"
-}
-
 resource "aws_iam_policy" "least_privilege_group_policy" {
-  name = "${var.name}-user-policy"
-  description = "Policy used for general access of the ${var.cluster_name} cluster."
-  policy = data.template_file.user_policy_template.rendered
+  name        = "${var.name_prefix}-user-policy"
+  description = "Policy used for general access of the cluster."
+  policy      = data.template_file.user_policy_template.rendered
 }
 
 resource "aws_iam_group_policy_attachment" "user_group_policy_attachment" {
@@ -60,7 +61,7 @@ resource "aws_iam_group_policy_attachment" "user_group_policy_attachment" {
 }
 
 resource "aws_iam_group_membership" "user_group_membership" {
-  name = "${var.name}-user-group-membership"
+  name = "${var.name_prefix}-user-group-membership"
 
   users = [
     aws_iam_user.user-1.name,
@@ -70,7 +71,8 @@ resource "aws_iam_group_membership" "user_group_membership" {
   group = aws_iam_group.user_group.name
 }
 
-# Creating aws-auth.yaml
+# Auxiliary resources -
+# Rendering the aws_base_auth.tpl -> aws_auth.yaml.
 data "template_file" "aws_auth_template" {
   template = file("${path.module}/templates/aws_base_auth.tpl")
   vars = {
@@ -84,8 +86,7 @@ data "template_file" "aws_auth_template" {
   }
 }
 
-# Create local file with rendered aws_auth template
 resource "local_file" "aws_auth_output" {
-  content = data.template_file.aws_auth_template.rendered
+  content  = data.template_file.aws_auth_template.rendered
   filename = "${path.root}/aws-auth.yaml"
 }

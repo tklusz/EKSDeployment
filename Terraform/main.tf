@@ -1,3 +1,6 @@
+# This file is used to call all other modules in the project.
+
+# Setting up terraform block and aws provider.
 terraform {
   required_version = ">= 0.12.0"
   required_providers {
@@ -15,6 +18,7 @@ module "eks_vpc" {
 
   name             = "eks"
   eks_cluster_name = var.eks_cluster_name
+  hosted_zone_name = var.hosted_zone_name
 
   vpc_cidr_block   = "172.31.0.0/16"
   instance_tenancy = "default"
@@ -24,48 +28,47 @@ module "eks_vpc" {
 
   public_subnet_cidrs = ["172.31.1.0/26", "172.31.1.64/26"]
   public_subnet_azs   = ["${var.region}a", "${var.region}b"]
-
 }
 
-# Creates EKS users
+# Creates EKS users.
 module "eks_users" {
   source = "./modules/eks_users"
 
-  name = var.eks_cluster_name
-  cluster_name = module.eks_cluster.cluster_name
-  cluster_arn = module.eks_cluster.cluster_arn
+  name_prefix     = var.eks_cluster_name
+  cluster_arn     = module.eks_cluster.cluster_arn
   worker_role_arn = module.eks_nodes.worker_role_arn
 }
 
-# Creates security groups for the cluster
+# Creates security groups for the cluster.
 module "eks_sgs" {
   source = "./modules/eks_security_groups"
 
-  name = var.eks_cluster_name
-  vpc_id = module.eks_vpc.vpc_id
-  user_ip = var.user_ip
+  name_prefix      = var.eks_cluster_name
+  vpc_id           = module.eks_vpc.vpc_id
+  eks_cluster_name = module.eks_cluster.cluster_name
 }
 
-# Creates the cluster itself
+# Creates the cluster itself.
 module "eks_cluster" {
   source = "./modules/eks_cluster"
 
   name                      = var.eks_cluster_name
   worker_subnet_ids         = module.eks_vpc.private_subnet_ids
   cluster_security_group_id = module.eks_sgs.cluster_sg_id
+  worker_security_group_id  = module.eks_sgs.worker_sg_id
   admin_user_arn            = module.eks_users.admin_user_arn
-  worker_sg_id              = module.eks_sgs.worker_sg_id
+
 }
 
-# Creates the nodes/workers for the cluster.
+# Creates the nodes/workers for the cluster along with additional worker node permissions.
 module "eks_nodes" {
   source = "./modules/eks_nodes"
 
-  name = var.eks_cluster_name
+  name_prefix = var.eks_cluster_name
 
-  eks_cluster_name             = module.eks_cluster.cluster_name
-  eks_cluster_endpoint         = module.eks_cluster.cluster_endpoint
-  eks_cluster_authority_data   = module.eks_cluster.cluster_authority_data
+  eks_cluster_name           = module.eks_cluster.cluster_name
+  eks_cluster_endpoint       = module.eks_cluster.cluster_endpoint
+  eks_cluster_authority_data = module.eks_cluster.cluster_authority_data
 
   desired_blue_capacity   = "1"
   blue_max_size           = "3"
