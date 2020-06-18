@@ -34,14 +34,14 @@ Navigate to `Terraform/` if not already there.
 ### Testing with Multiple Users
 This section describes how to configure RBAC for the multiple users we've created.
 
-First, the credentials for the IAM users `eks_admin`, `user-1` and `user-2`; must be manually created on the console if you intend to test with them.
+First, the credentials for the IAM users `eks_admin`, `user-1` and `user-2`, must be manually created on the console if you intend to test with them.
 
 To set up the users, navigate to the `Kubernetes/` directory.
 * Run `kubectl create -f namespaces.json`. This creates the namespaces for the users.
 * Next, run `kubectl create -f roles.yaml`. This applies RBAC roles and role-bindings to the users.
   * `user-1` will have access to the `user-1` namespace, `user-2` to the `user-2` namespace, and the `eks_admin` to all namespaces.
 
-Run `aws_configure` and enter the credentials of a user you want to test with (you can also create a profile for easier switching).
+Run `aws configure` and enter the credentials of a user you want to test with (you can also create a profile for easier switching).
 
 Run `aws eks --region us-west-2 update-kubeconfig --name primary`. Replace the region and cluster name if you used different ones.
 
@@ -71,7 +71,7 @@ spec:
 The annotation `external-dns.alpha.kubernetes.io/hostname: <hostname>` should match the desired hostname.
 
 After applying, wait 1-2 minutes, then do an `nslookup` of the hostname on one of your pods to test that the record is resolving correctly.
-* Note that outside of the VPC, these names won't be reachable, you'll have to use the ALB/ELB endpoint directly.
+* Note that outside of the VPC these names won't be reachable, you'll have to use the ALB/ELB endpoint directly.
 
 This same annotation is used for ingresses -
 ```
@@ -98,13 +98,13 @@ spec:
 
 ## Extra Features
 * Internal and external load-balancing definitions in Kubernetes charts create load balancers correctly. Note that any load balancers created via Kubernetes won't automatically delete with a `terraform destroy`. Please use kubectl to delete all services/ingresses prior to running a `terraform destroy`.
-* Cluster autoscaling is enabled (Instances will be scaled to the `max_size`/`min_size`, when required).
+* Cluster autoscaling is enabled (The number of instances will be scaled to the `max_size`/`min_size`, when required).
 * ASGs are set up in a blue-green deployment configuration, which makes upgrading easier.
 * One NAT gateway is created for each public subnet, which I would recommend in a production deployment. This is advantageous in the event an AZ goes down.
 
 
 ## Design Decisions
-* I decided to use a local Terraform backend to avoid manual creation of an S3 bucket, or extra steps during the deployment. In a deployment with multiple contributors, you will want to set up an s3 bucket manually for use as a remote state.
+* I decided to use a local Terraform backend to avoid manual creation of an S3 bucket, or extra steps during the deployment. In a deployment with multiple contributors, you will want to set up an S3 bucket manually for use as a remote state.
   * Not using an S3 backend allows the entire infrastructure to be deleted with a `terraform destroy` which is beneficial for testing purposes.
 * Using MFA is recommended in a production environment, using MFA will change the setup instructions here. I would recommend a 3rd party tool such as [awsume](https://awsu.me) to make the process easier.
 * I'm not using the Kubernetes module for resource creation as there is a bug where the Kubernetes API calls will time-out waiting for cluster creation. The issue is described [here](https://github.com/hashicorp/terraform-provider-kubernetes/issues/144) and [here.](https://github.com/hashicorp/terraform/issues/2430).
