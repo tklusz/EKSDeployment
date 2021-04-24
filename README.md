@@ -1,9 +1,9 @@
 # EKSDeployment
 
 ## Setup Notes
-Ensure Terraform is installed and on your path. I'm using version 0.12.26 for this deployment.
+Ensure Terraform is installed and on your path. Anything later than 12 should be fine.
 
-You will also need AWS CLI. I'm using version 2.0.20.
+You will also need AWS CLI. I'm using version 2.
 
 ## Creation Instructions
 First, we're creating the infrastructure using Terraform plus one manual step.
@@ -107,5 +107,5 @@ spec:
 * I decided to use a local Terraform backend to avoid manual creation of an S3 bucket, or extra steps during the deployment. In a deployment with multiple contributors, you will want to set up an S3 bucket manually for use as a remote state.
   * Not using an S3 backend allows the entire infrastructure to be deleted with a `terraform destroy` which is beneficial for testing purposes.
 * Using MFA is recommended in a production environment, using MFA will change the setup instructions here. I would recommend a 3rd party tool such as [awsume](https://awsu.me) to make the process easier.
-* I'm not using the Kubernetes module for resource creation as there is a bug where the Kubernetes API calls will time-out waiting for cluster creation. The issue is described [here](https://github.com/hashicorp/terraform-provider-kubernetes/issues/144) and [here.](https://github.com/hashicorp/terraform/issues/2430).
+* I'm not using the Kubernetes module for resource creation as there is a bug where the Kubernetes API calls will time-out waiting for cluster creation. The issue is described [here](https://github.com/hashicorp/terraform-provider-kubernetes/issues/144) and [here](https://github.com/hashicorp/terraform/issues/2430).
 * Resource restrictions in the policies could be improved for added security. For a PoC, this is fine, but in a production cluster you would want to tune those values.
